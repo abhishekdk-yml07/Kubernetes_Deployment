@@ -1,0 +1,38 @@
+# Dev overlay overrides
+global:
+  environment: development
+
+api:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/your-org/myapp-api
+    tag: "latest"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+
+worker:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+
+ingress:
+  hosts:
+    - host: myapp.dev.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging
+
+networkPolicy:
+  enabled: false     # Relaxed for dev debugging

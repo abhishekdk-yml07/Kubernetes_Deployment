@@ -1,0 +1,86 @@
+# ServiceAccount for the API — minimal permissions
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: myapp-api
+  namespace: production
+  annotations:
+    description: "API service account — read-only ConfigMaps and Secrets"
+automountServiceAccountToken: false
+
+---
+
+# Role — only what the API actually needs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: myapp-api-role
+  namespace: production
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["myapp-secrets"]   # Specific secret only
+    verbs: ["get"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: myapp-api-rolebinding
+  namespace: production
+subjects:
+  - kind: ServiceAccount
+    name: myapp-api
+    namespace: production
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: myapp-api-role
+
+---
+
+# ServiceAccount for CI/CD deployer (used by GitHub Actions)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: github-actions-deployer
+  namespace: production
+automountServiceAccountToken: false
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deployer-role
+  namespace: production
+rules:
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log", "services", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployer-rolebinding
+  namespace: production
+subjects:
+  - kind: ServiceAccount
+    name: github-actions-deployer
+    namespace: production
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: deployer-role

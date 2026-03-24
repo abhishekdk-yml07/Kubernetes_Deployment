@@ -1,0 +1,50 @@
+# Production overrides for helm/myapp/values.yaml
+global:
+  environment: production
+
+api:
+  replicaCount: 5
+  image:
+    repository: ghcr.io/your-org/myapp-api
+    tag: "REPLACE_WITH_VERSION"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  autoscaling:
+    minReplicas: 5
+    maxReplicas: 50
+  podDisruptionBudget:
+    minAvailable: 3
+  env:
+    LOG_LEVEL: WARNING
+    WORKERS: "4"
+
+worker:
+  replicaCount: 3
+  autoscaling:
+    minReplicas: 3
+    maxReplicas: 20
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+
+ingress:
+  hosts:
+    - host: myapp.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "200"
+    nginx.ingress.kubernetes.io/limit-connections: "50"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
